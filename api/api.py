@@ -1,10 +1,8 @@
-import configparser
-
 from flask import Flask, request
 from flask_restplus import Resource, Api, fields
 
-from setup import server_list_file
-
+from helpers.server_file import ServerFileHandler
+from helpers.setup import server_list_file
 
 app = Flask(__name__)
 api = Api(app, version='0.1', title='DBView API', description='An API to connect to databases')
@@ -24,53 +22,38 @@ server = api.model('Server', {
 class ServerList(Resource):
     @ns_server.doc()
     def get(self):
-        config = configparser.ConfigParser()
-        servers = []
-        try:
-            config.read(server_list_file())
-            for server in config.sections():
-                servers.append({"server": server})
-        except Exception as e:
-            print(str(e))
-        finally:
+        sfh = ServerFileHandler(server_list_file())
+        servers = sfh.read_all_server_names()
+        if servers:
             return servers, 200
+        else:
+            return servers, 404
 
 
 @ns_server.route('/<string:server_name>')
 class Server(Resource):
     @ns_server.doc()
     def get(self, server_name):
-        config = configparser.ConfigParser()
-        server = {}
-        try:
-            config.read(server_list_file())
-            if server_name in config.sections():
-                server['server'] = server_name
-                for k, v in config[server_name].items():
-                    server[k] = v
-                return server, 200
-            else:
-                return server, 404
-        except Exception as e:
-            print(str(e))
+        sfh = ServerFileHandler(server_list_file())
+        server = sfh.read_one_server_info(server_name)
+        if server:
+            return server, 200
+        else:
+            return server, 404
 
     @ns_server.expect(server)
     @ns_server.doc()
     def put(self, server_name):
-        config = configparser.ConfigParser()
-        try:
-            config.read(server_list_file())
-            if server_name in config.sections():
-                return "Server already exists", 403
+        sfh = ServerFileHandler(server_list_file())
+        servers = sfh.read_all_server_names()
+        if server_name in [serv['server'] for serv in servers]:
+            return "Server already exists", 403
+        else:
+            msg = sfh.append_one_server(server_name, api.payload)
+            if msg:
+                return msg, 201
             else:
-                config[server_name] = {} 
-                for k, v in api.payload.items():
-                    config[server_name][k] = v
-                with open(server_list_file(), 'w') as configfile:
-                    config.write(configfile)
-                return f"Server {server_name} was successfully added", 201
-        except Exception as e:
-            print(str(e))        
+                return f"Could not save {server_name}", 500
 
 
 if __name__ == '__main__':
