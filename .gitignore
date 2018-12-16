@@ -1,0 +1,3 @@
+/.pytest_cache
+*.pyc
+/api/__pycache__
