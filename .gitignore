@@ -1,3 +1,4 @@
 /.pytest_cache
 *.pyc
 /api/__pycache__
+servers.ini

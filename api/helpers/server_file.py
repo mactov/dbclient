@@ -41,3 +41,26 @@ class ServerFileHandler:
         except Exception as e:
             print(str(e))
             return None
+
+    def update_one_server(self, server_name, server_data):
+        try:
+            if server_name in self.config_parser.sections():
+                for k, v in server_data.items():
+                    self.config_parser[server_name][k] = v
+                with open(self.file, 'w') as configfile:
+                    self.config_parser.write(configfile)
+                return f"Server {server_name} was successfully added"
+        except Exception as e:
+            print(str(e))
+            return None
+
+    def delete_one_server(self, server_name):
+        try:
+            if server_name in self.config_parser.sections():
+                self.config_parser.remove_section(server_name)
+                with open(self.file, 'w') as configfile:
+                    self.config_parser.write(configfile)
+                return f"Server {server_name} was successfully deleted"
+        except Exception as e:
+            print(str(e))
+            return Non                       
